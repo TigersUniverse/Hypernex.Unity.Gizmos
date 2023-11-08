@@ -4,6 +4,8 @@ By **200Tigersbloxed**
 
 A VideoPlayer for Hypernex that syncs across the server (if you want it to)
 
+![Hypernex.VideoPlayer Demo](https://github.com/TigersUniverse/Hypernex.Unity.Gizmos/assets/45884377/407899c1-deb5-4215-ae68-e8cf7fe3813d)
+
 ## VideoPlayerClient.lua
 
 The LocalScript for the video player. To use it, attach it to a LocalScript on which a VideoPlayer and valid Controls are.
