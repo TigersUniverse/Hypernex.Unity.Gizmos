@@ -44,6 +44,28 @@ local JumpToButton = Background.GetChildByName("JumpToButton")
 -- A Slider for controlling VideoPlayer Volume
 local Volume = Background.GetChildByName("Volume")
 
+local Players = instance.GetHandler("Players")
+local Bindings = instance.GetHandler("Bindings")
+local Network = instance.GetHandler("Network")
+local Runtime = instance.GetHandler("Runtime")
+local Events = instance.GetHandler("Events")
+
+local LocalPlayer = Players.LocalPlayer
+
+local URLTextInput = URL.GetComponent("textinput")
+local PlayFromURLButton = PlayFromURL.GetComponent("button")
+local PositionSliders = PositionSlider.GetComponent("slider")
+local ShareToggle = Share.GetComponent("toggle")
+local PositionTextLabel = PositionText.GetComponent("text")
+local PlayPauseButton = PlayPause.GetComponent("button")
+local PlayPauseTextLabel = PlayPauseText.GetComponent("text")
+local LoopToggle = Loop.GetComponent("toggle")
+local ShareToggle = Share.GetComponent("toggle")
+local JumpToTextInput = JumpToText.GetComponent("textinput")
+local JumpToButtonb = JumpToButton.GetComponent("button")
+local VolumeSlider = Volume.GetComponent("slider")
+local VideoPlayer = item.GetComponent("video")
+
 -- NetworkSync Cache
 local SharingEnabled = CONFIG["ShareControls"]
 local gotSync = false
@@ -55,20 +77,22 @@ local isWorking = false
 local toggleFromNet = false
 local overrideToggleLoop = false
 
+
 -- Init Local Components
-UI.SetToggle(Loop, Video.IsLooping(item))
+LoopToggle.SetToggle(VideoPlayer.IsLooping())
 if CONFIG["NetworkSync"] then
-    UI.SetToggle(Share, SharingEnabled)
+    ShareToggle.SetToggle(SharingEnabled)
 else
     Share.Enabled = false
 end
-UI.RegisterInputFieldVR(URL)
+URLTextInput.RegisterInputFieldVR()
+JumpToTextInput.RegisterInputFieldVR()
 
 -- Function Tools
 local function CanControl()
     if not CONFIG["NetworkSync"] then return true end
     if SharingEnabled then return true end
-    return LocalAvatar.IsHost()
+    return LocalPlayer.IsHost
 end
 
 local function IsTriggerHeld()
@@ -84,7 +108,7 @@ end
 local function LoadAndPlayNewVideo(url)
     if CONFIG["NetworkSync"] then
         -- Tell the Server we are switching videos
-        NetworkEvent.SendToServer("hypernex.videoplayer", {item.Path, "load", url})
+        Network.SendToServer("hypernex.videoplayer", {item.Path, "load", url})
     else
         -- We do not need to tell the server
         HandleNewVideo(url)
@@ -95,36 +119,36 @@ local function HandleNewVideo(url)
     if isWorking then return end
     print("Downloading video from "..tostring(url))
     isWorking = true
-    Video.Stop(item)
+    VideoPlayer.Stop()
     local getMedia = GetMedia()
     getMedia.url = url
     getMedia.vQuality = VideoQuality.q720
     Cobalt.GetOptions(getMedia, SandboxFunc().SetAction(function(options)
         if options == nil or #options.Options <= 0 then
-            UI.SetText(PositionText, "Could not find a video for URL!")
+            PositionTextLabel.SetText("Could not find a video for URL!")
             isWorking = false
             return
         end
         local cobaltOption = options.Options[1]
-        UI.SetText(PositionText, "Downloading video...")
+        PositionTextLabel.SetText("Downloading video...")
         cobaltOption.Download(SandboxFunc().SetAction(function(file) 
             if file == nil then
-                UI.SetText(PositionText, "Failed to download video!")
+                PositionTextLabel.SetText("Failed to download video!")
                 isWorking = false
                 return
             end
-            Video.LoadFromCobalt(item, file)
-            if (gotSync and shouldPlayOnSync) or not gotSync then Video.Play(item) end
+            VideoPlayer.LoadFromCobalt(file)
+            if (gotSync and shouldPlayOnSync) or not gotSync then VideoPlayer.Play() end
             shouldPlayOnSync = true
             isWorking = false
             if CONFIG["NetworkSync"] then
-                if not LocalAvatar.IsHost() then
-                    NetworkEvent.SendToServer("hypernex.videoplayer", {item.Path, "getposition"})
+                if not LocalPlayer.IsHost then
+                    Network.SendToServer("hypernex.videoplayer", {item.Path, "getposition"})
                 elseif not isFirstNetLoad and CanControl() then
                     isFirstNetLoad = false
-                    NetworkEvent.SendToServer("hypernex.videoplayer", {item.Path, "position", 0})
+                    Network.SendToServer("hypernex.videoplayer", {item.Path, "position", 0})
                 else
-                    NetworkEvent.SendToServer("hypernex.videoplayer", {item.Path, "getposition"})
+                    Network.SendToServer("hypernex.videoplayer", {item.Path, "getposition"})
                 end
             end
         end))
@@ -134,41 +158,41 @@ end
 local function HandlePausePlay(newValue)
     if not CONFIG["NetworkSync"] then
         if newValue then
-            Video.Pause(item)
-            UI.SetText(PlayPauseText, "Resume")
+            VideoPlayer.Pause()
+            PlayPauseTextLabel.SetText("Resume")
         else
-            Video.Play(item)
-            UI.SetText(PlayPauseText, "Pause")
+            VideoPlayer.Play()
+            PlayPauseTextLabel.SetText("Pause")
         end
         return
     end
     local event
     if newValue then event = "play" else event = "pause" end
-    NetworkEvent.SendToServer("hypernex.videoplayer", {item.Path, event, newValue})
+    Network.SendToServer("hypernex.videoplayer", {item.Path, event, newValue})
 end
 
 local function HandleLoop(newValue)
     if CONFIG["NetworkSync"] then
-        NetworkEvent.SendToServer("hypernex.videoplayer", {item.Path, "loop", newValue})
+        Network.SendToServer("hypernex.videoplayer", {item.Path, "loop", newValue})
     else
-        Video.SetLoop(item, newValue)
+        VideoPlayer.SetLoop()
         overrideToggleLoop = true
-        UI.SetToggle(Loop, Video.IsLooping(item))
+        LoopToggle.SetToggle(VideoPlayer.IsLooping())
         overrideToggleLoop = false
     end
 end
 
 local function HandleSharing(newValue)
     if not CONFIG["NetworkSync"] then return end
-    NetworkEvent.SendToServer("hypernex.videoplayer", {item.Path, "share", newValue})
+    Network.SendToServer("hypernex.videoplayer", {item.Path, "share", newValue})
 end
 
 local function HandlePosition(setTime)
     if not CONFIG["NetworkSync"] then
-        Video.SetPosition(item, setTime)
+        VideoPlayer.SetPosition(setTime)
         return
     end
-    NetworkEvent.SendToServer("hypernex.videoplayer", {item.Path, "position", setTime})
+    Network.SendToServer("hypernex.videoplayer", {item.Path, "position", setTime})
 end
 
 -- https://devforum.roblox.com/t/converting-secs-to-hsec/146352/2
@@ -186,72 +210,72 @@ end
 --
 
 -- Button Handlers
-UI.RegisterButtonClick(PlayFromURL, SandboxFunc().SetAction(function()
+PlayFromURLButton.RegisterClick(SandboxFunc().SetAction(function()
     -- Do not allow change when working
     if isWorking then return end
-    if CONFIG["NetworkSync"] and (SharingEnabled or LocalAvatar.IsHost()) then
+    if CONFIG["NetworkSync"] and (SharingEnabled or LocalPlayer.IsHost) then
         -- There are network sync perms
-        LoadAndPlayNewVideo(UI.GetInputFieldText(URL))
+        LoadAndPlayNewVideo(URLTextInput.GetText())
     elseif not CONFIG["NetworkSync"] then
         -- There is no NetworkSync
-        LoadAndPlayNewVideo(UI.GetInputFieldText(URL))
+        LoadAndPlayNewVideo(URLTextInput.GetText())
     end
 end))
 
-UI.RegisterButtonClick(PlayPause, SandboxFunc().SetAction(function()
+PlayPauseButton.RegisterClick(SandboxFunc().SetAction(function()
     if isWorking then return end
     if not CanControl() then return end
-    HandlePausePlay(not Video.IsPlaying(item))
+    HandlePausePlay(not VideoPlayer.IsPlaying())
 end))
 
-UI.RegisterToggleValueChanged(Loop, SandboxFunc().SetAction(function()
+LoopToggle.RegisterValueChanged(SandboxFunc().SetAction(function()
     if overrideToggleLoop then return end
     if not CanControl() then
         overrideToggleLoop = true
-        UI.SetToggle(Loop, Video.IsLooping(item))
+        LoopToggle.SetToggle(VideoPlayer.IsLooping())
         overrideToggleLoop = false
         return
     end
-    HandleLoop(not Video.IsLooping(item))
+    HandleLoop(not VideoPlayer.IsLooping())
 end))
 
-UI.RegisterToggleValueChanged(Share, SandboxFunc().SetAction(function()
+ShareToggle.RegisterValueChanged(SandboxFunc().SetAction(function()
     if toggleFromNet then return end
     if not CanControl() then
-        UI.SetToggle(Share, SharingEnabled)
+        ShareToggle.SetToggle(SharingEnabled)
         return
     end
     HandleSharing(not SharingEnabled)
-    UI.SetToggle(Share, SharingEnabled)
+    ShareToggle.SetToggle(SharingEnabled)
 end))
 
-UI.RegisterSliderValueChanged(Volume, SandboxFunc().SetAction(function(value)
-    Video.SetVolume(item, value)
+VolumeSlider.RegisterValueChanged(SandboxFunc().SetAction(function(value)
+    VideoPlayer.SetVolume(value)
 end))
 
-UI.RegisterButtonClick(JumpToButton, SandboxFunc().SetAction(function()
+JumpToButtonb.RegisterClick(SandboxFunc().SetAction(function()
     if isWorking or not CanControl() then return end
-    HandlePosition(tonumber(UI.GetInputFieldText(JumpToText)))
-    UI.SetInputFieldText(JumpToText, "")
+    HandlePosition(tonumber(JumpToTextInput.GetText()))
+    JumpToTextInput.SetText("")
 end))
 
 -- Runtime Events
 Runtime.OnUpdate(SandboxFunc().SetAction(function()
     if isWorking then return end
-    if not Video.IsPlaying(item) then return end
-    local currentPosition = convertToHMS(Video.GetPosition(item))
-    local endPosition = convertToHMS(Video.GetLength(item))
-    UI.SetText(PositionText, tostring(currentPosition).." - "..tostring(endPosition))
-    UI.SetSliderRange(PositionSlider, 0, Video.GetLength(item))
-    UI.SetSlider(PositionSlider, Video.GetPosition(item))
+    if not VideoPlayer.IsPlaying() then return end
+    local currentPosition = convertToHMS(VideoPlayer.GetPosition())
+    local endPosition = convertToHMS(VideoPlayer.GetLength())
+    PositionTextLabel.SetText(tostring(currentPosition).." - "..tostring(endPosition))
+    PositionSliders.SetRange(0, VideoPlayer.GetLength())
+    PositionSliders.SetValue(VideoPlayer.GetPosition())
 end))
 
 Runtime.RepeatSeconds(SandboxFunc().SetAction(function()
     if not CONFIG["NetworkSync"] then return end
-    if not LocalAvatar.IsHost() then return end
-    if not Video.IsPlaying(item) then return end
+    if not LocalPlayer.IsHost then return end
+    if not VideoPlayer.IsPlaying() then return end
     if isFirstNetLoad then return end
-    NetworkEvent.SendToServer("hypernex.videoplayer", {item.Path, "position_", Video.GetPosition(item)})
+    Network.SendToServer("hypernex.videoplayer", {item.Path, "position_", VideoPlayer.GetPosition()})
 end), 3)
 
 -- Network Handling
@@ -263,12 +287,10 @@ end
 Events.Subscribe(ScriptEvent.OnServerNetworkEvent, SandboxFunc().SetAction(function(eventName, eventArgs) 
     -- Do not handle if it is not for us
     if not eventName == "hypernex.videoplayer" then return end
-    -- [[
     -- How a message looks
     -- eventArgs[1] - Path
     -- eventArgs[2] - Key
-    -- eventArgs[3] - Value  
-    -- ]]
+    -- eventArgs[3] - Value
     -- Do not handle if this is not the same VideoPlayer
     if not eventArgs[1] == item.Path then return end
     print("Got video message "..tostring(eventName).." from server! To: "..tostring(item.Path))
@@ -279,48 +301,48 @@ Events.Subscribe(ScriptEvent.OnServerNetworkEvent, SandboxFunc().SetAction(funct
     end
     if eventArgs[2] == "pause" then
         if isWorking then return end
-        Video.Pause(item)
-        UI.SetText(PlayPauseText, "Resume")
+        VideoPlayer.Pause()
+        PlayPauseTextLabel.SetText("Resume")
     end
     if eventArgs[2] == "play" then
         if isWorking then return end
-        Video.Play(item)
-        UI.SetText(PlayPauseText, "Pause")
+        VideoPlayer.Play()
+        PlayPauseTextLabel.SetText("Pause")
     end
     if eventArgs[2] == "time" then
         if isWorking then return end
-        Video.SetPosition(item, eventArgs[3])
+        VideoPlayer.SetPosition(eventArgs[3])
     end
     if eventArgs[2] == "share" then
         SharingEnabled = eventArgs[3]
         toggleFromNet = true
-        UI.SetToggle(Share, SharingEnabled)
+        ShareToggle.SetToggle(SharingEnabled)
         toggleFromNet = false
     end
-    if eventArgs[2] == "loop" then Video.SetLoop(item, eventArgs[3]) end
+    if eventArgs[2] == "loop" then VideoPlayer.SetLoop(eventArgs[3]) end
     if eventArgs[2] == "position" then
         if isWorking then return end
-        Video.SetPosition(item, tonumber(eventArgs[3]))
+        VideoPlayer.SetPosition(tonumber(eventArgs[3]))
     end
     if eventArgs[2] == "get" then
         SharingEnabled = eventArgs[3]
-        Video.SetLoop(item, eventArgs[5])
+        VideoPlayer.SetLoop(eventArgs[5])
         isFirstNetLoad = tonumber(eventArgs[6]) > 0
         if eventArgs[4] ~= "" then
             shouldPlayOnSync = not eventArgs[7]
             HandleNewVideo(eventArgs[4])
             if eventArgs[7] then
-                UI.SetText(PlayPauseText, "Resume")
+                PlayPauseTextLabel.SetText("Resume")
             else
-                UI.SetText(PlayPauseText, "Pause")
+                PlayPauseTextLabel.SetText("Pause")
             end
-        elseif not CONFIG["StartingURL"] == "" and LocalAvatar.IsHost() then
+        elseif not CONFIG["StartingURL"] == "" and LocalPlayer.IsHost then
             LoadAndPlayNewVideo(CONFIG["StartingURL"])
         end
     end
     if eventArgs[2] == "getposition" then
         -- TODO: Better Desync prevention
-        if isFirstNetLoad and LocalAvatar.IsHost() then NetworkEvent.SendToServer("hypernex.videoplayer", {item.Path, "position", eventArgs[3]}) end
+        if isFirstNetLoad and LocalPlayer.IsHost then Network.SendToServer("hypernex.videoplayer", {item.Path, "position", eventArgs[3]}) end
         -- We now know that there has been some form of initiation with a net load
         isFirstNetLoad = false
         -- We are already loading, cache and wait
@@ -330,10 +352,10 @@ Events.Subscribe(ScriptEvent.OnServerNetworkEvent, SandboxFunc().SetAction(funct
             return
         end
         gotSync = false
-        Video.SetPosition(item, tonumber(eventArgs[3]))
+        VideoPlayer.SetPosition(tonumber(eventArgs[3]))
     end
 end))
 
 Runtime.RunAfterSeconds(SandboxFunc().SetAction(function()
-    NetworkEvent.SendToServer("hypernex.videoplayer", {item.Path, "get"})
+    Network.SendToServer("hypernex.videoplayer", {item.Path, "get"})
 end), 5)

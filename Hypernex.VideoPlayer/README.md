@@ -4,7 +4,7 @@ By **200Tigersbloxed**
 
 A VideoPlayer for Hypernex that syncs across the server (if you want it to)
 
-**[Download Latest UnityPackage](https://github.com/TigersUniverse/Hypernex.Unity.Gizmos/releases/download/hv-1.0.0/Hypernex.VideoPlayer.v1.0.0.unitypackage)**
+**[Download Latest UnityPackage](https://github.com/TigersUniverse/Hypernex.Unity.Gizmos/releases/download/hv-1.2.0/Hypernex.VideoPlayer.v1.2.0.unitypackage)**
 
 ![Hypernex.VideoPlayer Demo](https://github.com/TigersUniverse/Hypernex.Unity.Gizmos/assets/45884377/407899c1-deb5-4215-ae68-e8cf7fe3813d)
 

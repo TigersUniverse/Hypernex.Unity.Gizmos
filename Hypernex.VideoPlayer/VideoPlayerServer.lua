@@ -53,13 +53,13 @@ Events.Subscribe(ScriptEvent.OnUserNetworkEvent, SandboxFunc().SetAction(functio
                     ["pause"] = false
                 }
             end
-            if not videoPlayerCache[eventArgs[1]]["ShareControls"] and not userid == Players.HostId then return end
+            if not videoPlayerCache[eventArgs[1]]["ShareControls"] and not userid == Instance.HostId then return end
             if eventArgs[2] == "share" then videoPlayerCache[eventArgs[1]]["ShareControls"] = not videoPlayerCache[eventArgs[1]]["ShareControls"] end
             if eventArgs[2] == "load" then videoPlayerCache[eventArgs[1]]["url"] = eventArgs[3] end
             if eventArgs[2] == "play" then videoPlayerCache[eventArgs[1]]["pause"] = false end
             if eventArgs[2] == "pause" then videoPlayerCache[eventArgs[1]]["pause"] = true end
             if eventArgs[2] == "loop" then videoPlayerCache[eventArgs[1]]["loop"] = eventArgs[3] end
-            if eventArgs[2] == "position_" and userid == Players.HostId then videoPlayerCache[eventArgs[1]]["position"] = eventArgs[3] end
+            if eventArgs[2] == "position_" and userid == Instance.HostId then videoPlayerCache[eventArgs[1]]["position"] = eventArgs[3] end
             NetworkEvent.SendToAllClients("hypernex.videoplayer", {eventArgs[1], eventArgs[2], eventArgs[3]})
         end
     end
