@@ -1,6 +1,6 @@
 -- [[
 -- Hypernex.VideoPlayer
--- v1.0.0
+-- v1.2.0
 -- Written by 200Tigersbloxed
 -- ]]
 local CONFIG = {
@@ -120,24 +120,13 @@ local function HandleNewVideo(url)
     print("Downloading video from "..tostring(url))
     isWorking = true
     VideoPlayer.Stop()
-    local getMedia = GetMedia()
-    getMedia.url = url
-    getMedia.vQuality = VideoQuality.q720
-    Cobalt.GetOptions(getMedia, SandboxFunc().SetAction(function(options)
-        if options == nil or #options.Options <= 0 then
+    PositionTextLabel.SetText("Downloading video...")
+    Streaming.Download(url, function(downloadResult)
+        if downloadResult == nil then
             PositionTextLabel.SetText("Could not find a video for URL!")
             isWorking = false
-            return
-        end
-        local cobaltOption = options.Options[1]
-        PositionTextLabel.SetText("Downloading video...")
-        cobaltOption.Download(SandboxFunc().SetAction(function(file) 
-            if file == nil then
-                PositionTextLabel.SetText("Failed to download video!")
-                isWorking = false
-                return
-            end
-            VideoPlayer.LoadFromCobalt(file)
+        else
+            VideoPlayer.LoadFromStream(downloadResult)
             if (gotSync and shouldPlayOnSync) or not gotSync then VideoPlayer.Play() end
             shouldPlayOnSync = true
             isWorking = false
@@ -151,8 +140,8 @@ local function HandleNewVideo(url)
                     Network.SendToServer("hypernex.videoplayer", {item.Path, "getposition"})
                 end
             end
-        end))
-    end))
+        end
+    end)
 end
 
 local function HandlePausePlay(newValue)
@@ -195,17 +184,18 @@ local function HandlePosition(setTime)
     Network.SendToServer("hypernex.videoplayer", {item.Path, "position", setTime})
 end
 
--- https://devforum.roblox.com/t/converting-secs-to-hsec/146352/2
-function Format(Int)
-	return string.format("%02i", Int)
-end
-
+--
 function convertToHMS(Seconds)
-	local Minutes = (Seconds - Seconds%60)/60
-	Seconds = Seconds - Minutes*60
-	local Hours = (Minutes - Minutes%60)/60
-	Minutes = Minutes - Hours*60
-	return Format(Hours)..":"..Format(Minutes)..":"..Format(Seconds)
+	local hours = MathF.Floor(Seconds / 3600)
+    local minutes = MathF.Floor((Seconds % 3600) / 60)
+    local secs = MathF.Floor(Seconds % 60)
+
+    local timeString = ""
+    if hours > 0 then
+        timeString = timeString..tostring(hours)..":"
+    end
+    timeString = timeString..(minutes < 10 and "0" .. minutes or minutes) .. ":" .. (secs < 10 and "0" .. secs or secs)
+    return timeString
 end
 --
 

@@ -1,6 +1,6 @@
 -- [[
 -- Hypernex.VideoPlayer
--- v1.0.0
+-- v1.2.0
 -- Written by 200Tigersbloxed
 -- ]]
 
