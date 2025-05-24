@@ -1,6 +1,6 @@
 -- [[
 -- Hypernex.VideoPlayer
--- v1.3.1
+-- v1.3.2
 -- Written by 200Tigersbloxed
 -- ]]
 local CONFIG = {
@@ -276,7 +276,7 @@ end
 
 Events.Subscribe(ScriptEvent.OnServerNetworkEvent, SandboxFunc().SetAction(function(eventName, eventArgs) 
     -- Do not handle if it is not for us
-    if not eventName == "hypernex.videoplayer" then return end
+    if eventName ~= "hypernex.videoplayer" then return end
     -- How a message looks
     -- eventArgs[1] - Path
     -- eventArgs[2] - Key

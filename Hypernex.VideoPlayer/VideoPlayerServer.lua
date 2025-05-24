@@ -1,6 +1,6 @@
 -- [[
 -- Hypernex.VideoPlayer
--- v1.3.1
+-- v1.3.2
 -- Written by 200Tigersbloxed
 -- ]]
 
@@ -19,7 +19,7 @@ local videoPlayerCache = {}
 -- Network Handling
 Events.Subscribe(ScriptEvent.OnUserNetworkEvent, SandboxFunc().SetAction(function(userid, eventName, eventArgs)
     -- Do not handle if it is not for us
-    if not eventName == "hypernex.videoplayer" then return end
+    if eventName ~= "hypernex.videoplayer" then return end
     if eventArgs[2] == "get" then
         -- Return current info
         if videoPlayerCache[eventArgs[1]] ~= nil then
